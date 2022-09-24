@@ -1,31 +1,25 @@
-require 'active_model'
-require 'active_record'
-require 'newspaper'
-require 'podcast'
-require 'subscription'
+# frozen_string_literal: true
 
 class User < ApplicationRecord
-	has_many :subscriptions
+  has_many :subscriptions
 
-	validates :username, presence: true
-	validates :active, presence: true
+  validates :username, :active, presence: true
+  validates :username, uniqueness: true
 
-	after_initialize :set_active
-	after_update :check_active
+  after_update :check_active
 
-	private
+  def initialize(attributes = nil)
+    super
+    self.active = true
+  end
 
-	def set_active
-		self.active = true
-	end
+  private
 
-	def check_active
-		if self.active == 0
-			(1..self.subscriptions.length).each do |i|
-				s = self.subscriptions[i-1]
-				s.disabled!
-				s.save
-			end
-		end
-	end
+  def active?
+    active == 1
+  end
+
+  def check_active
+    subscriptions.each(&:disabled!) unless active?
+  end
 end
